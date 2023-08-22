@@ -21,14 +21,10 @@ const client = new MongoClient(uri, {
         console.log("Connected to the database");
 
         const coursesCollection = client.db('courses').collection('courses-collection');
+
         app.post("/add-course", async (req, res) => {
-
           const data = req.body;
-          
-          // console.log(info)
-
           const result = await coursesCollection.insertOne(data);
-          // console.log(result)
           res.send(result);
       })
 
@@ -38,6 +34,50 @@ const client = new MongoClient(uri, {
         const courseData = await cursor.toArray();
         res.send(courseData);
     });
+
+    app.get('/get-courses/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const service = await coursesCollection.findOne(query);
+      res.send(service);
+  });
+    app.patch('/update-course/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const status = req.body;
+        const query = { _id: new ObjectId(id) };
+    
+        const replacement = {
+          imageUrl: status.imageUrl,
+          title: status.title,
+          classNumber: status.classNumber,
+          courseType: status.courseType,
+        };
+    
+        const result = await coursesCollection.replaceOne(query, replacement);
+    
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'Document not found' });
+        }
+    
+        if (result.modifiedCount === 0) {
+          return res.status(400).json({ message: 'Document was not modified' });
+        }
+    
+        res.status(200).json({ message: 'Document replaced successfully' });
+        // console.log('Document replaced:', result);
+      } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+      }
+  })
+
+    app.delete('/course/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await coursesCollection.deleteOne(query);
+      res.send(result);
+  })
     
     } finally{
 
@@ -52,7 +92,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`server running on port ${port}`);
 })
-// demoTaskDB
-// EkAEzNzdZBBXYJcV  ,Pass
-
-// mongodb+srv://demoTaskDB:EkAEzNzdZBBXYJcV@cluster0.msmcqlg.mongodb.net/?retryWrites=true&w=majority
